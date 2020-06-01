@@ -78,9 +78,6 @@ if __name__ == "__main__":
         print("[=] user interrupt")
         sys.exit(1)
 
-    # except:
-    #     print("[-] unknown exception occurs")
-
     finally:
         if (sock_server):
             sock_server.close()

@@ -8,6 +8,8 @@ import threading
 #
 # if prev, end_char is not newline and current line on_newline=True
 # need a variable that should remember prev-value
+# 
+# Why this complex functionality is required ? -- 01-Jun-20
 #
 def printMsg(str_data, id=0, end_char='\n', on_newline=True):
     with threading.Lock():

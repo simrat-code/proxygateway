@@ -9,7 +9,7 @@ import select
 import time
 
 
-from simx_http.common_utils import printMsg
+from common_utils import printMsg
 
 def nextValueOf(text, src_list):
     print(src_list)
@@ -42,22 +42,21 @@ class clientHandlerThread(threading.Thread):
             "\r\n")
 
 
-    def __init__(self, thread_id, conn, addr, data=""):
+    def __init__(self, thread_id, sock_client, addr, data=""):
         threading.Thread.__init__(self)
         self.thread_id = thread_id
-        self.conn = conn
+        self.sock_client = sock_client
         self.addr = addr
         self.data = data
 
 
-    def run(self):        
-        
-        # self.conn.setblocking(False) # working for HTTP but error with SSL
-        self.conn.setblocking(True)
+    def run(self):              
+        # self.sock_client.setblocking(False) # working for HTTP but error with SSL
+        self.sock_client.setblocking(True)
 
         if not self.data:
             # print("[=] receiving data!!!")
-            data = self.conn.recv(8192)
+            data = self.sock_client.recv(8192)
             self.data = data.decode("utf-8")
 
         # print("[{0:03d}] recv data ----------[ {0} ]\n==>{1}<==\n".format(self.thread_id, self.data))
@@ -71,9 +70,9 @@ class clientHandlerThread(threading.Thread):
         except IndexError as e:
             print("[{:03d}] exception occurs 03: {}".format(self.thread_id, e))            
         finally:
-            if (self.conn): 
+            if (self.sock_client): 
                 printMsg("closing client connection ----------------[ {:d} ]".format(self.thread_id), id=self.thread_id)
-                self.conn.close()
+                self.sock_client.close()
     
 
     def dataRateKB(self, reply):        
@@ -93,7 +92,7 @@ class clientHandlerThread(threading.Thread):
         # Host: null-byte.wonderhowto.com:443        
         # ==========================================================================================
 
-        # self.conn.send(self.static_resp.encode("utf-8"))
+        # self.sock_client.send(self.static_resp.encode("utf-8"))
         
         #
         # Fetching webserver address and port from 
@@ -166,7 +165,7 @@ class clientHandlerThread(threading.Thread):
             #
             # to avoid WinError 10035:
             # "A non-blocking socket operation could not be completed immediately"
-            # which occurs during conn.recv() call
+            # which occurs during sock_client.recv() call
             # so setting blocking to True ie setblocking(True)
             #
             # Solution: use select() and do setblocking(False)
@@ -180,17 +179,14 @@ class clientHandlerThread(threading.Thread):
             sock_web.setblocking(False)
             sock_web.sendall(str.encode(self.data))
 
-            inputs = [sock_web, self.conn]
+            inputs = [sock_web, self.sock_client]
             outputs = []
             
-            self._superWhile(inputs, outputs, self.conn, sock_web, timeout=60)
+            self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=60)
 
         except socket.error as e:
             print("[{:03d}] exception occurs: {}".format(self.thread_id, e))
-        # except:
-        #     print("[{:03d}] exception occurs: unknown exception".format(self.thread_id))
         finally:
-            # print("[{:03d}] closing webserver socket".format(self.thread_id), flush=True)
             sock_web.close()
 
     
@@ -215,31 +211,31 @@ class clientHandlerThread(threading.Thread):
             #
             # to avoid WinError 10035: 
             # "A non-blocking socket operation could not be completed immediately"
-            # which occurs during conn.recv() call
+            # which occurs during sock_client.recv() call
             # so setting blocking to True
             #
             # using select() as solution to this issue
             #
             sock_web.setblocking(False)
-            self.conn.setblocking(False)
+            self.sock_client.setblocking(False)
 
-            # print("[{:03d}] client socket: {}".format(self.thread_id, self.conn))
+            # print("[{:03d}] client socket: {}".format(self.thread_id, self.sock_client))
             # print("[{:03d}] web+++ socket: {}".format(self.thread_id, sock_web))
 
             #
             # since connection with server is successful
             # Proxy should send the 2xx reply to client.
             #
-            self.conn.sendall(proxy_resp.encode("utf-8") )
+            self.sock_client.sendall(proxy_resp.encode("utf-8") )
 
             #
             # now need to start the loop for handing over request-reponse
             # between client and server via proxy
             #
-            inputs = [sock_web, self.conn]
+            inputs = [sock_web, self.sock_client]
             outputs = []
 
-            self._superWhile(inputs, outputs, self.conn, sock_web, timeout=300)
+            self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=300)
            
         except socket.error as e:
             print("[{:03d}] exception occurs: {}".format(self.thread_id, e))
