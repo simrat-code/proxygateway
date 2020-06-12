@@ -37,6 +37,9 @@ class ProxyType(enum.Enum):
 
 if __name__ == "__main__":
 
+    if sys.version_info.major != 3:
+        raise Exception("Must use Python 3.x")
+
     max_connection = 5
     buf_size = 8192
     port = 3139
