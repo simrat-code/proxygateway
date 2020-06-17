@@ -9,7 +9,9 @@ import threading
 # if prev, end_char is not newline and current line on_newline=True
 # need a variable that should remember prev-value
 # 
-# Why this complex functionality is required ? -- 01-Jun-20
+# for printing two types;
+#   - simple messages (simple)
+#   - data rate (dr)
 #
 def printMsg(str_data, id=0, end_char='\n', on_newline=True):
     with threading.Lock():
@@ -22,3 +24,8 @@ def printMsg(str_data, id=0, end_char='\n', on_newline=True):
             leading_newline = '\r'
         printMsg.prev_end_char = end_char
         print("{}[{:03d}] {}".format(leading_newline, id, str_data), end=end_char, flush=True )
+
+
+def printDataRate(str_data, id=0, end_char='', on_newline=True):
+    leading_newline = '\r'
+    print("{}[{:03d}] {}".format(leading_newline, id, str_data), end=end_char, flush=True )

@@ -9,7 +9,7 @@ import select
 import time
 
 
-from common_utils import printMsg
+from common_utils import printMsg, printDataRate
 
 def nextValueOf(text, src_list):
     print(src_list)
@@ -291,7 +291,7 @@ class clientHandlerThread(threading.Thread):
                     inputs.remove(sock_recv)
                     inputs.remove(sock_send)
 
-                printMsg(str_msg, id=self.thread_id, end_char=end_char, on_newline=False)
+                printDataRate(str_msg, id=self.thread_id, end_char=end_char, on_newline=False)
             ## end of FOR
 
             if not inputs: 

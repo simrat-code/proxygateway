@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     max_connection = 5
     buf_size = 8192
-    port = 3139
+    port = 8282
     proxy_type = ProxyType.direct
     id = 0
     inputs = []
