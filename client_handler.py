@@ -9,7 +9,8 @@ import select
 import time
 
 
-from common_utils import printMsg, printDataRate
+from common_utils import printMsg
+from common_utils import printDataRate
 
 def nextValueOf(text, src_list):
     print(src_list)
@@ -32,7 +33,7 @@ def portForService(protocol):
         return 443
 
 
-class clientHandlerThread(threading.Thread):
+class ClientHandlerThread(threading.Thread):
     static_resp = ("HTTP/1.0 200 OK \r\n"
             "Date: Thu, 14 Mar 2019 16:28:53 GMT\r\n"
             "Server: Apache/2.2.14 (Win32)\r\n"
@@ -42,8 +43,10 @@ class clientHandlerThread(threading.Thread):
             "\r\n")
 
 
-    def __init__(self, thread_id, sock_client, addr, data=""):
-        threading.Thread.__init__(self)
+    def __init__(self, event, thread_id, sock_client, addr, data=""):
+        # super(ClientHandlerThread, self).__init__()
+        super().__init__()
+        self.event = event
         self.thread_id = thread_id
         self.sock_client = sock_client
         self.addr = addr
@@ -252,7 +255,7 @@ class clientHandlerThread(threading.Thread):
         #
         str_msg = ""
         end_char = '\n'
-        while True:
+        while not self.event.is_set():
             ready = select.select(inputs, outputs, inputs, timeout) 
 
             if (not ready[0] and not ready[1] and not ready[2]): break  # select timeout

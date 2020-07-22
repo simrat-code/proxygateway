@@ -3,14 +3,14 @@
 # Date      : Apr-2020
 #
 
-import socket
-import select
-import sys
+
 import time
 import enum
+import sys
+import socket
+import threading
 
-from client_handler import clientHandlerThread
-from common_utils import printMsg
+import server_thread
 
 """
 https://null-byte.wonderhowto.com/how-to/sploit-make-proxy-server-python-0161232/
@@ -33,56 +33,53 @@ https://www.geeksforgeeks.org/creating-a-proxy-webserver-in-python-set-1/
 class ProxyType(enum.Enum):
     direct = 1
     proxy = 2
-        
+
+def menu():
+    print("\t"+ "+"*8 +"Proxy Gateway"+ "+"*8)
+    print("\t 1 - start server")
+    print("\t 2 - stop server")
+    print("\t 0 - exit")
+    print("")
+    choice = input("enter choice: ")
+    return choice
+
 
 if __name__ == "__main__":
 
     if sys.version_info.major != 3:
         raise Exception("Must use Python 3.x")
 
-    max_connection = 5
-    buf_size = 8192
-    port = 8282
     proxy_type = ProxyType.direct
-    id = 0
-    inputs = []
-    outputs = []
+    proxy_server_thread = None
+    event = threading.Event()
+    
+    
 
-    try:
-        sock_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock_server.bind(('', port))
-        sock_server.listen(max_connection)
-        sock_server.setblocking(False)
-        printMsg("server started successfully on port {}".format(port), on_newline=True)
+    while True:
+        choice = menu()
 
-        inputs.append(sock_server)
-        # inputs.append(sys.stdin)
-        while inputs:
-            #print("[=] waiting for new request")
-            #
-            # todo: need to implement select
-            # timeout field has been set as on Windows during select() prog
-            # do respond to Ctrl+C
-            # It is after timeout it accept 'pending' user interrupt
-            #
-            readable, writable, exceptional = select.select (inputs, outputs, inputs, 20)
-            for s in readable:
-                if s is sock_server:
-                    id = id + 1
-                    printMsg("accepting new request", id=id)
-                    sock_client, addr = s.accept()
+        if choice == "1": 
+            # start server
+            if proxy_server_thread is None:
+                proxy_server_thread = server_thread.ServerProxyGW(event)
+                proxy_server_thread.start()
+            else:
+                print("server already running")
+            
+        elif choice == "2" or choice == "0":
+            # stop server
+            # need to set threading.Event()
+            if proxy_server_thread:
+                event.set()
+                proxy_server_thread.join()
+                proxy_server_thread = None
+                event.clear()
 
-                    #
-                    # starting a new thread
-                    #
-                    clientHandlerThread(id, sock_client, addr).start()
+            if choice == "0":
+                break
+        
+        else:
+            pass
 
-    except KeyboardInterrupt as e:
-        print("[=] user interrupt")
-        sys.exit(1)
-
-    finally:
-        if (sock_server):
-            sock_server.close()
-            print("[=] server socket closed")
+    
 # --end--
