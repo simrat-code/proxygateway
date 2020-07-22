@@ -3,7 +3,6 @@ import threading
 import socket
 import select
 import sys
-import os
 
 from client_handler import ClientHandlerThread
 from common_utils import printMsg
@@ -21,9 +20,8 @@ class ServerProxyGW(threading.Thread):
     def run(self):
         try:
             sock_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            if os.name == "posix":
-                sock_server.setsockopt(SO_REUSEADDR, 1)   # for POSIX only
-                
+            sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
             sock_server.bind(('', self.port))
             sock_server.listen(self.max_connection)
             sock_server.setblocking(False)
