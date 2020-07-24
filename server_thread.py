@@ -3,6 +3,7 @@ import threading
 import socket
 import select
 import sys
+import time
 
 from client_handler import ClientHandlerThread
 from common_utils import printMsg
@@ -26,6 +27,11 @@ class ServerProxyGW(threading.Thread):
             sock_server.listen(self.max_connection)
             sock_server.setblocking(False)
             printMsg("server started successfully on port {}".format(self.port), on_newline=True)
+
+            # send 'up' status to main thread
+            # and give enough time to 'main' thread to 'clear' the event
+            self.event.set()
+            time.sleep(0.5)
 
             id = 0
             inputs = []

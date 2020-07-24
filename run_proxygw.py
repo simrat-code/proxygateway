@@ -34,8 +34,13 @@ class ProxyType(enum.Enum):
     direct = 1
     proxy = 2
 
+banner_text = " Proxy Gateway "
+
 def menu():
-    print("\t"+ "+"*8 +"Proxy Gateway"+ "+"*8)
+    print("\t"+ "=" * (8 + len(banner_text) + 8))
+    print("\t"+ "+"*8 + banner_text + "+"*8)
+    print("\t"+ "=" * (8 + len(banner_text) + 8))
+    print("")
     print("\t 1 - start server")
     print("\t 2 - stop server")
     print("\t 0 - exit")
@@ -52,7 +57,7 @@ if __name__ == "__main__":
     proxy_type = ProxyType.direct
     proxy_server_thread = None
     event = threading.Event()
-    
+    # event_from_server = threading.Event()
     
 
     while True:
@@ -63,14 +68,20 @@ if __name__ == "__main__":
             if proxy_server_thread is None:
                 proxy_server_thread = server_thread.ServerProxyGW(event)
                 proxy_server_thread.start()
+
+                # wait for server to start-up
+                event.wait()
+                event.clear()
             else:
                 print("server already running")
             
         elif choice == "2" or choice == "0":
             # stop server
             # need to set threading.Event()
+            print("[=] waiting for server-thread to complete...")
             if proxy_server_thread:
                 event.set()
+                # wait for 'server' thread to exit
                 proxy_server_thread.join()
                 proxy_server_thread = None
                 event.clear()
