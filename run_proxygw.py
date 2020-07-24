@@ -49,6 +49,17 @@ def menu():
     return choice
 
 
+def cleanup_server(thr):
+    print("[=] waiting for server-thread to complete...")
+    if thr:
+        event.set()
+        # wait for 'server' thread to exit
+        thr.join()
+        thr = None
+        event.clear()
+        print("[=] server cleanup done")
+
+
 if __name__ == "__main__":
 
     if sys.version_info.major != 3:
@@ -59,38 +70,44 @@ if __name__ == "__main__":
     event = threading.Event()
     # event_from_server = threading.Event()
     
+    try:
+        while True:
+            choice = menu()
 
-    while True:
-        choice = menu()
+            if choice == "1": 
+                # start server
+                if proxy_server_thread is None:
+                    proxy_server_thread = server_thread.ServerProxyGW(event)
+                    proxy_server_thread.start()
 
-        if choice == "1": 
-            # start server
-            if proxy_server_thread is None:
-                proxy_server_thread = server_thread.ServerProxyGW(event)
-                proxy_server_thread.start()
-
-                # wait for server to start-up
-                event.wait()
-                event.clear()
-            else:
-                print("server already running")
-            
-        elif choice == "2" or choice == "0":
-            # stop server
-            # need to set threading.Event()
-            print("[=] waiting for server-thread to complete...")
-            if proxy_server_thread:
-                event.set()
-                # wait for 'server' thread to exit
-                proxy_server_thread.join()
+                    # wait for server to start-up
+                    event.wait()
+                    event.clear()
+                else:
+                    print("server already running")
+                
+            elif choice == "2" or choice == "0":
+                # stop server
+                # need to set threading.Event()
+                cleanup_server(proxy_server_thread)
                 proxy_server_thread = None
-                event.clear()
+                # if proxy_server_thread:
+                #     event.set()
+                #     # wait for 'server' thread to exit
+                #     proxy_server_thread.join()
+                #     proxy_server_thread = None
+                #     event.clear()
 
-            if choice == "0":
-                break
-        
-        else:
-            pass
+                if choice == "0":
+                    break
+            
+            else:
+                pass
+        # end of while
 
+    except KeyboardInterrupt as e:
+        print("[=] user interrupt : {}".format(e))        
+        cleanup_server(proxy_server_thread)
+        sys.exit(1)
     
 # --end--

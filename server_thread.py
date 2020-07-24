@@ -57,9 +57,9 @@ class ServerProxyGW(threading.Thread):
                         #
                         ClientHandlerThread(self.event, id, sock_client, addr).start()
 
-        except KeyboardInterrupt as e:
-            print("[=] user interrupt : {}".format(e))
-            sys.exit(1)
+        # except KeyboardInterrupt as e:
+        #     print("[=] user interrupt : {}".format(e))
+        #     sys.exit(1)
 
         finally:
             if (sock_server):
