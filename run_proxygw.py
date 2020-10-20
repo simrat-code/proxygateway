@@ -34,9 +34,10 @@ class ProxyType(enum.Enum):
     direct = 1
     proxy = 2
 
-banner_text = " Proxy Gateway "
 
 def menu():
+    banner_text = " Proxy Gateway "
+
     print("\t"+ "=" * (8 + len(banner_text) + 8))
     print("\t"+ "+"*8 + banner_text + "+"*8)
     print("\t"+ "=" * (8 + len(banner_text) + 8))
@@ -50,40 +51,33 @@ def menu():
     return choice
 
 
-def cleanup_server(thr):
+def cleanup_server(pgw_thread, event_stop):
     print("[=] waiting for server-thread to complete...")
-    if thr:
-        event.set()
-        # wait for 'server' thread to exit
-        thr.join()
-        thr = None
-        event.clear()
+    if pgw_thread.is_alive():
+        event_stop.set()
+        # wait for 'server' thread-while to exit
+        pgw_thread.join()
+        event_stop.clear()
         print("[=] server cleanup done")
 
 
-def menu_block(proxy_server_thread, event):
+def menuBlock(pgw_thread, event_start, event_stop):
     choice = menu()
     if choice == "1": 
         # start server
-        if proxy_server_thread is None:
-            proxy_server_thread = server_thread.ServerProxyGW(event)
-            proxy_server_thread.start()
-
+        if not pgw_thread.is_alive():
+            pgw_thread.start()
             # wait for server to start-up
-            event.wait()
-            event.clear()
+            event_start.wait()
+            event_start.clear()
         else:
             print("server already running")        
     elif choice == "2" or choice == "0":
         # stop server
-        # need to set threading.Event()
-        cleanup_server(proxy_server_thread)
-        proxy_server_thread = None 
+        cleanup_server(pgw_thread, event_stop)
     elif choice == "3":
-        if proxy_server_thread: 
-            print("server is running")
-        else: 
-            print("server is not running")
+        var = "" if pgw_thread.isRunning() else "not "
+        print("server is {}running".format(var))
     else:
         print("invalid choice")
     return choice
@@ -95,18 +89,23 @@ if __name__ == "__main__":
         raise Exception("Must use Python 3.x")
 
     proxy_type = ProxyType.direct
-    proxy_server_thread = None
-    event = threading.Event()
+    # An event object manages an internal flag that can be 
+    # the set() method  : set flag to true
+    # the clear() method: reset the flag to false
+    # the wait() method : blocks until the flag is true.
+    event_start = threading.Event()
+    event_stop = threading.Event()
+    proxy_server_thread = server_thread.ServerProxyGW(event_start, event_stop)
     
     try:
         while True:
-            choice = menu_block(proxy_server_thread, event)
+            choice = menuBlock(proxy_server_thread, event_start, event_stop)
             print(choice)
             if choice == "0": break
 
     except KeyboardInterrupt as e:
         print("[=] user interrupt : {}".format(e))        
-        cleanup_server(proxy_server_thread)
+        cleanup_server(proxy_server_thread, event_stop)
         sys.exit(1)
     
 # --end--
