@@ -9,8 +9,8 @@ import select
 import time
 
 
-from common_utils import printMsg
-from common_utils import printDataRate
+from utilscode import printMsg
+from utilscode import printDataRate
 
 def nextValueOf(text, src_list):
     print(src_list)

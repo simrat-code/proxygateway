@@ -6,7 +6,7 @@ import sys
 import time
 
 from client_handler import ClientHandlerThread
-from common_utils import printMsg
+from utilscode import printMsg
 
 class ServerProxyGW(threading.Thread):
 
