@@ -55,9 +55,9 @@ def cleanup_server(pgw_thread, event_stop):
     print("[=] waiting for server-thread to complete...")
     if pgw_thread.is_alive():
         event_stop.set()
-        # wait for 'server' thread-while to exit
+        # wait for 'server and client' thread-while to exit
         pgw_thread.join()
-        event_stop.clear()
+        # event_stop.clear()
         print("[=] server cleanup done")
 
 
@@ -65,6 +65,7 @@ def menuBlock(pgw_thread, event_start, event_stop):
     choice = menu()
     if choice == "1": 
         # start server
+        event_stop.clear()
         if not pgw_thread.is_alive():
             pgw_thread.start()
             # wait for server to start-up

@@ -50,7 +50,8 @@ class ServerProxyGW(threading.Thread):
                     sock_client, addr = s.accept()
                                         
                     # starting a new client thread
-                    ClientHandlerThread(self.event_start, id, sock_client, addr).start()
+                    # and 'event_stop' to indicate application exit.
+                    ClientHandlerThread(self.event_stop, id, sock_client, addr).start()
         else:
             if (sock_server):
                 sock_server.close()

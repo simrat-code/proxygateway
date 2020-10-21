@@ -43,10 +43,10 @@ class ClientHandlerThread(threading.Thread):
             "\r\n")
 
 
-    def __init__(self, event, thread_id, sock_client, addr, data=""):
+    def __init__(self, event_stop, thread_id, sock_client, addr, data=""):
         # super(ClientHandlerThread, self).__init__()
         super().__init__()
-        self.event = event
+        self.event_stop = event_stop
         self.thread_id = thread_id
         self.sock_client = sock_client
         self.addr = addr
@@ -255,7 +255,7 @@ class ClientHandlerThread(threading.Thread):
         #
         str_msg = ""
         end_char = '\n'
-        while not self.event.is_set():
+        while not self.event_stop.is_set():
             ready = select.select(inputs, outputs, inputs, timeout) 
 
             if (not ready[0] and not ready[1] and not ready[2]): break  # select timeout
