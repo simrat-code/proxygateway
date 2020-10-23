@@ -43,7 +43,7 @@ def menu():
     print("\t"+ "=" * (8 + len(banner_text) + 8))
     print("")
     print("\t 1 - start server")
-    print("\t 2 - stop server")
+    print("\t 2 - stop server and exit")
     print("\t 3 - status check")
     print("\t 0 - exit")
     print("")
@@ -74,8 +74,12 @@ def menuBlock(pgw_thread, event_start, event_stop):
         else:
             print("server already running")        
     elif choice == "2" or choice == "0":
-        # stop server
+        # stop server and set exit flag
+        # by assigning zero to choice
+        # It is required since server run as thread and once
+        # joined/complete should not call run() method again
         cleanup_server(pgw_thread, event_stop)
+        choice = "0"
     elif choice == "3":
         var = "" if pgw_thread.isRunning() else "not "
         print("server is {}running".format(var))
