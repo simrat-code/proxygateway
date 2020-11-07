@@ -41,3 +41,12 @@ def fetchAddressPort(text):
     port = text[pos+1:]
     if not port or not address: raise ValueError
     return (address, port)
+
+
+def banner():
+    banner_text = " Proxy Gateway "
+
+    print(" "*4 + "=" * (8 + len(banner_text) + 8))
+    print(" "*4 + "+"*8 + banner_text + "+"*8)
+    print(" "*4 + "=" * (8 + len(banner_text) + 8))
+    print("")

@@ -3,15 +3,22 @@
 # Date      : Apr-2020
 #
 
-
-import time
 import sys
-import socket
-import threading
-import argparse
 
-import server_thread
-import utilscode
+try:
+    if sys.version_info.major != 3: raise NameError
+
+    import time
+    import socket
+    import threading
+    import argparse
+
+    import server_thread
+    import utilscode
+
+except NameError as e:
+    print("[-] Exception Caught: Must use Python 3.x")
+    sys.exit(1)
 
 """
 https://null-byte.wonderhowto.com/how-to/sploit-make-proxy-server-python-0161232/
@@ -30,15 +37,6 @@ Types of Proxy:
 https://www.geeksforgeeks.org/creating-a-proxy-webserver-in-python-set-1/
 
 """
-
-def banner():
-    banner_text = " Proxy Gateway "
-
-    print(" "*4 + "=" * (8 + len(banner_text) + 8))
-    print(" "*4 + "+"*8 + banner_text + "+"*8)
-    print(" "*4 + "=" * (8 + len(banner_text) + 8))
-    print("")
-
 
 def startup_server(pgw_thread, event_start, event_stop):
     event_stop.clear()
@@ -64,16 +62,13 @@ def cleanup_server(pgw_thread, event_stop):
 
 
 if __name__ == "__main__":
-    if sys.version_info.major != 3:
-        raise Exception("Must use Python 3.x")
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", help="local interface and port to listen on <0.0.0.0:8282>")
     # parser.add_argument("--parent", help="parent proxy interface and port <10.0.0.22:8080>")
     args = parser.parse_args()
 
     try:
-        banner()
+        utilscode.banner()
         # An event object manages an internal flag that can be 
         # the set() method   : set flag to true
         # the clear() method : reset the flag to false
