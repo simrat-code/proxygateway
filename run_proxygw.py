@@ -9,8 +9,10 @@ import enum
 import sys
 import socket
 import threading
+import argparse
 
 import server_thread
+import utilscode
 
 """
 https://null-byte.wonderhowto.com/how-to/sploit-make-proxy-server-python-0161232/
@@ -68,28 +70,39 @@ def cleanup_server(pgw_thread, event_stop):
 
 
 if __name__ == "__main__":
-    banner()
     if sys.version_info.major != 3:
         raise Exception("Must use Python 3.x")
 
     proxy_type = ProxyType.direct
-    # An event object manages an internal flag that can be 
-    # the set() method  : set flag to true
-    # the clear() method: reset the flag to false
-    # the wait() method : blocks until the flag is true.
-    event_start = threading.Event()
-    event_stop = threading.Event()
-    pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
-    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--local", help="local interface and port to listen on <0.0.0.0:8282>")
+    # parser.add_argument("--parent", help="parent proxy interface and port <10.0.0.22:8080>")
+    args = parser.parse_args()
+
     try:
+        banner()
+        # An event object manages an internal flag that can be 
+        # the set() method   : set flag to true
+        # the clear() method : reset the flag to false
+        # the wait() method  : blocks until the flag is true.
+        event_start = threading.Event()
+        event_stop = threading.Event()
+        pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
+
+        if args.local:
+            value = utilscode.fetchAddressPort(args.local)
+            pgw_thread.addr = value[0]
+            pgw_port = value[1]
+        
         startup_server(pgw_thread, event_start, event_stop)
         pgw_thread.join()
 
     except KeyboardInterrupt as e:
-        print("\n[=] user interrupt : {}".format(e))
+        print("\n[-] user interrupt : {}".format(e))
         sys.exit(1)
+    except ValueError as e:
+        print("[-] Exception Caught: invalid argument provided")
     finally:
         cleanup_server(pgw_thread, event_stop)
-
     
 # --end--

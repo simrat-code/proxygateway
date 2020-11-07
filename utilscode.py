@@ -29,3 +29,15 @@ def printMsg(str_data, id=0, end_char='\n', on_newline=True):
 def printDataRate(str_data, id=0, end_char='', on_newline=True):
     leading_newline = '\r'
     print("{}[{:03d}] {}".format(leading_newline, id, str_data), end=end_char, flush=True )
+
+
+def fetchAddressPort(text):
+    '''Return tuple(address, port)
+    raise ValueError if separation char ie ':' not found
+    '''
+    pos = text.find(':')
+    if pos == -1: raise ValueError
+    address = text[:pos]
+    port = text[pos+1:]
+    if not port or not address: raise ValueError
+    return (address, port)

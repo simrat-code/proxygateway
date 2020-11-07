@@ -18,10 +18,16 @@ class ServerProxyGW(threading.Thread):
         self._addr = '0.0.0.0'
 
     def run(self):
-        sock_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        sock_server.bind((self._addr, self._port))
+        try:
+            sock_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock_server.bind((self._addr, self._port))
+        except OSError as e:
+            print("[-] Exception Caught: ", e)
+            print('[-] unable to start server')
+            # send signal to main thread
+            self.event_start.set()
+            return
         sock_server.listen(5)
         sock_server.setblocking(False)
         printMsg("server started on {}:{}".format(self._addr, self._port), on_newline=True)
