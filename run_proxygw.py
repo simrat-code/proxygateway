@@ -35,20 +35,25 @@ class ProxyType(enum.Enum):
     proxy = 2
 
 
-def menu():
+def banner():
     banner_text = " Proxy Gateway "
 
-    print("\t"+ "=" * (8 + len(banner_text) + 8))
-    print("\t"+ "+"*8 + banner_text + "+"*8)
-    print("\t"+ "=" * (8 + len(banner_text) + 8))
+    print(" "*4 + "=" * (8 + len(banner_text) + 8))
+    print(" "*4 + "+"*8 + banner_text + "+"*8)
+    print(" "*4 + "=" * (8 + len(banner_text) + 8))
     print("")
-    print("\t 1 - start server")
-    print("\t 2 - stop server and exit")
-    print("\t 3 - status check")
-    print("\t 0 - exit")
-    print("")
-    choice = input("enter choice: ")
-    return choice
+
+
+def startup_server(pgw_thread, event_start, event_stop):
+    event_stop.clear()
+    if not pgw_thread.is_alive():
+        pgw_thread.start()
+        # wait for server to start-up
+        event_start.wait()
+        event_start.clear()
+    else:
+        print("server already running")
+    return "1"
 
 
 def cleanup_server(pgw_thread, event_stop):
@@ -59,37 +64,11 @@ def cleanup_server(pgw_thread, event_stop):
         pgw_thread.join()
         # event_stop.clear()
         print("[=] server cleanup done")
-
-
-def menuBlock(pgw_thread, event_start, event_stop):
-    choice = menu()
-    if choice == "1": 
-        # start server
-        event_stop.clear()
-        if not pgw_thread.is_alive():
-            pgw_thread.start()
-            # wait for server to start-up
-            event_start.wait()
-            event_start.clear()
-        else:
-            print("server already running")        
-    elif choice == "2" or choice == "0":
-        # stop server and set exit flag
-        # by assigning zero to choice
-        # It is required since server run as thread and once
-        # joined/complete should not call run() method again
-        cleanup_server(pgw_thread, event_stop)
-        choice = "0"
-    elif choice == "3":
-        var = "" if pgw_thread.isRunning() else "not "
-        print("server is {}running".format(var))
-    else:
-        print("invalid choice")
-    return choice
+    return "0"
 
 
 if __name__ == "__main__":
-
+    banner()
     if sys.version_info.major != 3:
         raise Exception("Must use Python 3.x")
 
@@ -100,17 +79,17 @@ if __name__ == "__main__":
     # the wait() method : blocks until the flag is true.
     event_start = threading.Event()
     event_stop = threading.Event()
-    proxy_server_thread = server_thread.ServerProxyGW(event_start, event_stop)
+    pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
     
     try:
-        while True:
-            choice = menuBlock(proxy_server_thread, event_start, event_stop)
-            print(choice)
-            if choice == "0": break
+        startup_server(pgw_thread, event_start, event_stop)
+        pgw_thread.join()
 
     except KeyboardInterrupt as e:
-        print("[=] user interrupt : {}".format(e))        
-        cleanup_server(proxy_server_thread, event_stop)
+        print("\n[=] user interrupt : {}".format(e))
         sys.exit(1)
+    finally:
+        cleanup_server(pgw_thread, event_stop)
+
     
 # --end--
