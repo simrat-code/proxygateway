@@ -58,14 +58,13 @@ class ClientHandlerThread(threading.Thread):
         self.sock_client.setblocking(True)
 
         if not self.data:
-            # print("[=] receiving data!!!")
+            # no-data provided to send to webserver
+            # that means, first need to recv data from client
             data = self.sock_client.recv(8192)
             self.data = data.decode("utf-8")
 
-        # print("[{0:03d}] recv data ----------[ {0} ]\n==>{1}<==\n".format(self.thread_id, self.data))
         try:
-            self._processRequest()
-           
+            self._processRequest()           
         except socket.error as e:
             print("[{:03d}] exception occurs 01: {}".format(self.thread_id, e))
         except ValueError as e:
@@ -74,7 +73,8 @@ class ClientHandlerThread(threading.Thread):
             print("[{:03d}] exception occurs 03: {}".format(self.thread_id, e))            
         finally:
             if (self.sock_client): 
-                printMsg("closing client connection ----------------[ {:d} ]".format(self.thread_id), id=self.thread_id)
+                printMsg("closing client connection ----------------[ {:d} ]"
+                "".format(self.thread_id), id=self.thread_id)
                 self.sock_client.close()
     
 
@@ -95,12 +95,11 @@ class ClientHandlerThread(threading.Thread):
         # Host: null-byte.wonderhowto.com:443        
         # ==========================================================================================
 
+        # for testing during early development - send back static resp to client
         # self.sock_client.send(self.static_resp.encode("utf-8"))
         
-        #
         # Fetching webserver address and port from 
-        # the very first line of request        
-        #
+        # the very first line of request       
         first_line = self.data.split('\n')[0]
 
         # check for HTTP Method in client request
@@ -109,48 +108,44 @@ class ClientHandlerThread(threading.Thread):
             print("[{:03d}] invalid HTTP method: {}".format(self.thread_id, header_list[0]) )
             return
 
-        #
-        # item at index 1 of first-line is the webserver/website/target server address
-        #
+        # item at index 1 of first-line is the webserver's or website's server address
+        # CONNECT https://null-byte.wonderhowto.com:443/test.html HTTP/1.1
+        # CONNECT null-byte.wonderhowto.com:443 HTTP/1.1
         url = header_list[1]
 
         webserver = ""
         port = -1
-        protocol = ""
+        protocol = "http"
 
         temp_index = url.find("://")
         if (temp_index != -1):
-            #
             # skip "://" and get the rest of url
             # the 'url' may be like
             # <ip-address>:<port>
-            #
             protocol = url[:temp_index]
             url = url[(temp_index + 3):]
-            
-        index_p = url.find(":")
-        index_r = url.find("/")
-        if (index_r == -1): index_r = len(url)
+          
+        pos = url.find("/")
+        index_r = len(url) if pos == -1 else pos
 
+        index_p = url.find(":")
         if (index_p == -1):
-            #
             # do not found the port index ':' in url
-            # webserver is considered upto location of '/'
-            # absense of port means default 'port-80'
-            #
+            # webserver is considered upto location of '/' ie resource
+            # absense of port means, either
+            #   fetch from protocol if mentioned along with url ie http or https, or
+            #   default 'http' ie port 80
             webserver = url[:index_r]
             port = portForService(protocol)
         else:
-            #
             # port index has been found
-            #
+            # and 'index_r' will be either some value or length of url
             webserver = url[:index_p]
             port = int(url[index_p + 1:index_r] )
-        #
+        
         # connecting to remote server (ie destination webserver)
         # pass self.data ie original request to it
         # and send back the response to client
-        #
         printMsg("connecting: server => {} : {}".format(webserver, str(port)), id=self.thread_id )
         if (header_list[0] in ["GET", "POST"]):
             self.targetHTTPServer(webserver, port)
