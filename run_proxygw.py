@@ -70,9 +70,9 @@ if __name__ == "__main__":
     try:
         utilscode.banner()
         # An event object manages an internal flag that can be 
-        # the set() method   : set flag to true
-        # the clear() method : reset the flag to false
-        # the wait() method  : blocks until the flag is true.
+        # set()     : set flag to true
+        # clear()   : reset the flag to false
+        # wait()    : blocks until the flag is true.
         event_start = threading.Event()
         event_stop = threading.Event()
         pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
@@ -83,7 +83,8 @@ if __name__ == "__main__":
             pgw_port = value[1]
         
         startup_server(pgw_thread, event_start, event_stop)
-        pgw_thread.join()
+        while pgw_thread.is_alive(): time.sleep(5)
+        print("[x] server thread exited unexpectedly")
 
     except KeyboardInterrupt as e:
         print("\n[-] user interrupt : {}".format(e))
