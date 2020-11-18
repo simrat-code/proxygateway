@@ -16,6 +16,8 @@ try:
     import server_thread
     import utilscode
 
+    from client_handler import CommonClientData
+
 except NameError as e:
     print("[-] Exception Caught: Must use Python 3.x")
     sys.exit(1)
@@ -38,22 +40,22 @@ https://www.geeksforgeeks.org/creating-a-proxy-webserver-in-python-set-1/
 
 """
 
-def startup_server(pgw_thread, event_start, event_stop):
-    event_stop.clear()
+def startup_server(pgw_thread, ccd):
+    ccd.eventStop.clear()
     if not pgw_thread.is_alive():
         pgw_thread.start()
         # wait for server to start-up
-        event_start.wait()
-        event_start.clear()
+        ccd.eventStart.wait()
+        ccd.eventStart.clear()
     else:
         print("server already running")
     return "1"
 
 
-def cleanup_server(pgw_thread, event_stop):
+def cleanup_server(pgw_thread, ccd):
     print("[=] waiting for server-thread to complete...")
     if pgw_thread.is_alive():
-        event_stop.set()
+        ccd.eventStop.set()
         # wait for 'server and client' thread-while to exit
         pgw_thread.join()
         # event_stop.clear()
@@ -68,19 +70,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     utilscode.banner()
+    ccd = CommonClientData()
     # An event object manages an internal flag that can be 
     # set()     : set flag to true
     # clear()   : reset the flag to false
     # wait()    : blocks until the flag is true.
-    event_start = threading.Event()
-    event_stop = threading.Event()
-    pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
+    ccd.eventStart = threading.Event()
+    ccd.eventStop = threading.Event()
+    pgw_thread = server_thread.ServerProxyGW(ccd)
 
     try:
         if args.local:
             pgw_thread.addr, pgw_thread.port = utilscode.fetchAddressPort(args.local)
         
-        startup_server(pgw_thread, event_start, event_stop)
+        startup_server(pgw_thread, ccd)
         while pgw_thread.is_alive(): time.sleep(5)
         print("[x] server thread exited unexpectedly")
 
@@ -90,6 +93,6 @@ if __name__ == "__main__":
     except ValueError as e:
         print("[-] Exception Caught: invalid argument provided")
     finally:
-        cleanup_server(pgw_thread, event_stop)
+        cleanup_server(pgw_thread, ccd)
     
 # --end--

@@ -6,16 +6,17 @@ import sys
 import time
 
 from client_handler import ClientHandlerThread
+from client_handler import CommonClientData
 from utilscode import printMsg
+
 
 class ServerProxyGW(threading.Thread):
 
-    def __init__(self, event_start, event_stop):
+    def __init__(self, ccd):
         super().__init__()
-        self.event_start = event_start
-        self.event_stop = event_stop
         self._port = 8282
         self._addr = '0.0.0.0'
+        self._ccd = ccd
 
     def run(self):
         try:
@@ -26,21 +27,21 @@ class ServerProxyGW(threading.Thread):
             print("[-] Exception Caught: ", e)
             print('[-] unable to start server')
             # send signal to main thread
-            self.event_start.set()
+            self._ccd.eventStart.set()
             return
         sock_server.listen(5)
         sock_server.setblocking(False)
         printMsg("server started on {}:{}".format(self._addr, self._port), on_newline=True)
 
         # send 'up' status to main thread
-        self.event_start.set()
+        self._ccd.eventStart.set()
 
         id = 0
         inputs = []
         outputs = []
 
         inputs.append(sock_server)
-        while not self.event_stop.is_set():
+        while not self._ccd.eventStop.is_set():
             # timeout field has been set as on Windows during select() prog
             # do respond to Ctrl+C
             # It is after timeout it accept 'pending' user interrupt
@@ -53,7 +54,7 @@ class ServerProxyGW(threading.Thread):
                                         
                     # starting a new client thread
                     # and 'event_stop' to indicate application exit.
-                    ClientHandlerThread(self.event_stop, id, sock_client, addr).start()
+                    ClientHandlerThread(id, sock_client, addr, self._ccd).start()
         else:
             if (sock_server):
                 sock_server.close()
@@ -61,12 +62,10 @@ class ServerProxyGW(threading.Thread):
     
     @property
     def port(self): return self._port
-
     @port.setter
-    def port(self, p): self._port = p
+    def port(self, value): self._port = int(value)
 
     @property
     def addr(self): return self._addr
-
     @addr.setter
-    def addr(self, a): self._addr = a
+    def addr(self, value): self._addr = value
