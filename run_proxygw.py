@@ -67,20 +67,18 @@ if __name__ == "__main__":
     # parser.add_argument("--parent", help="parent proxy interface and port <10.0.0.22:8080>")
     args = parser.parse_args()
 
-    try:
-        utilscode.banner()
-        # An event object manages an internal flag that can be 
-        # set()     : set flag to true
-        # clear()   : reset the flag to false
-        # wait()    : blocks until the flag is true.
-        event_start = threading.Event()
-        event_stop = threading.Event()
-        pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
+    utilscode.banner()
+    # An event object manages an internal flag that can be 
+    # set()     : set flag to true
+    # clear()   : reset the flag to false
+    # wait()    : blocks until the flag is true.
+    event_start = threading.Event()
+    event_stop = threading.Event()
+    pgw_thread = server_thread.ServerProxyGW(event_start, event_stop)
 
+    try:
         if args.local:
-            value = utilscode.fetchAddressPort(args.local)
-            pgw_thread.addr = value[0]
-            pgw_port = value[1]
+            pgw_thread.addr, pgw_thread.port = utilscode.fetchAddressPort(args.local)
         
         startup_server(pgw_thread, event_start, event_stop)
         while pgw_thread.is_alive(): time.sleep(5)
