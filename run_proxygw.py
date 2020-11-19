@@ -66,7 +66,7 @@ def cleanup_server(pgw_thread, ccd):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", help="local interface and port to listen on <0.0.0.0:8282>")
-    # parser.add_argument("--parent", help="parent proxy interface and port <10.0.0.22:8080>")
+    parser.add_argument("--parent", help="parent proxy interface and port <10.0.0.22:8080>")
     args = parser.parse_args()
 
     utilscode.banner()
@@ -82,7 +82,9 @@ if __name__ == "__main__":
     try:
         if args.local:
             pgw_thread.addr, pgw_thread.port = utilscode.fetchAddressPort(args.local)
-        
+        if args.parent:
+            ccd.paddr, ccd.pport = utilscode.fetchAddressPort(args.parent)
+                
         startup_server(pgw_thread, ccd)
         while pgw_thread.is_alive(): time.sleep(5)
         print("[x] server thread exited unexpectedly")

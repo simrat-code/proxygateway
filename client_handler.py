@@ -60,13 +60,6 @@ class CommonClientData():
     @pport.setter
     def pport(self, value): self._pport = int(value)
 
-    @property
-    def pproxy(self): return (self._paddr, self._pport)
-    @pproxy.setter
-    def pproxy(self, addr, port): 
-        self._addr = addr
-        self._port = int(port)
-
     
 
 class ClientHandlerThread(threading.Thread):
@@ -96,11 +89,13 @@ class ClientHandlerThread(threading.Thread):
         if not self.data:
             # no-data provided to send to webserver
             # that means, first need to recv data from client
+            # for HTTPS-request this is 'CONNECT www.google.com:443 HTTP/1.1'
             data = self.sock_client.recv(8192)
             self.data = data.decode("utf-8")
+        print(f'recv data len {len(self.data)}')
 
         try:
-            self._processRequest()           
+            self.processRequest()           
         except socket.error as e:
             print("[{:03d}] exception occurs 01: {}".format(self.thread_id, e))
         except ValueError as e:
@@ -120,26 +115,9 @@ class ClientHandlerThread(threading.Thread):
         dar = "%.3s" % (str(dar))
         dar = "%s KB" % (dar)
         return dar
-                
-
-    def _processRequest(self):
-        # ============ Sample Request Format for HTTPS =============================================
-        # CONNECT null-byte.wonderhowto.com:443 HTTP/1.1
-        # User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0
-        # Proxy-Connection: keep-alive
-        # Connection: keep-alive
-        # Host: null-byte.wonderhowto.com:443        
-        # ==========================================================================================
-
-        # for testing during early development - send back static resp to client
-        # self.sock_client.send(self.static_resp.encode("utf-8"))
-        
-        # Fetching webserver address and port from 
-        # the very first line of request       
-        first_line = self.data.split('\n')[0]
-
+    
+    def fetchTarget(self, header_list):
         # check for HTTP Method in client request
-        header_list = first_line.split(' ')
         if (header_list[0] not in ["GET", "POST", "CONNECT"]):
             print("[{:03d}] invalid HTTP method: {}".format(self.thread_id, header_list[0]) )
             return
@@ -178,6 +156,30 @@ class ClientHandlerThread(threading.Thread):
             # and 'index_r' will be either some value or length of url
             webserver = url[:index_p]
             port = int(url[index_p + 1:index_r] )
+        return webserver, port
+
+    def processRequest(self):
+        # ============ Sample Request Format for HTTPS =============================================
+        # CONNECT null-byte.wonderhowto.com:443 HTTP/1.1
+        # User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0
+        # Proxy-Connection: keep-alive
+        # Connection: keep-alive
+        # Host: null-byte.wonderhowto.com:443        
+        # ==========================================================================================
+
+        # for testing during early development - send back static resp to client
+        # self.sock_client.send(self.static_resp.encode("utf-8"))
+        
+        print(f'parent on {self.ccd.paddr}:{self.ccd.pport}')
+
+        first_line = self.data.split('\n')[0]
+        header_list = first_line.split(' ')
+        if self.ccd.paddr:
+            # parent proxy is provided on command-line option
+            webserver = self.ccd.paddr
+            port = self.ccd.pport
+        else:
+            webserver, port = self.fetchTarget(header_list)
         
         # connecting to remote server (ie destination webserver)
         # pass self.data ie original request to it
@@ -188,14 +190,14 @@ class ClientHandlerThread(threading.Thread):
         elif (header_list[0] == "CONNECT"):
             self.targetSSLServer(webserver, port)
         else:
-            print("[{:03d}] ALERT!!! this statement should never execute!!!".format(self.thread_id))
+            print("[{:03d}] ALERT!!! missing correct header !!!".format(self.thread_id))
             return
 
 
     def targetHTTPServer(self, webserver, port):
         try:
             sock_web = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock_web.connect((webserver, port))
+            sock_web.connect((webserver, port)) 
             #
             # to avoid WinError 10035:
             # "A non-blocking socket operation could not be completed immediately"
@@ -242,30 +244,30 @@ class ClientHandlerThread(threading.Thread):
         try:
             sock_web = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock_web.connect((webserver, port))
-            #
+            
             # to avoid WinError 10035: 
             # "A non-blocking socket operation could not be completed immediately"
             # which occurs during sock_client.recv() call
             # so setting blocking to True
             #
             # using select() as solution to this issue
-            #
             sock_web.setblocking(False)
+            if self.ccd.paddr:
+                # send 'CONNECT' packet to parent proxy
+                sock_web.sendall(str.encode(self.data))
+                # self.sock_client.setblocking(True)
+            # else:
             self.sock_client.setblocking(False)
 
             # print("[{:03d}] client socket: {}".format(self.thread_id, self.sock_client))
             # print("[{:03d}] web+++ socket: {}".format(self.thread_id, sock_web))
-
-            #
+            
             # since connection with server is successful
             # Proxy should send the 2xx reply to client.
-            #
             self.sock_client.sendall(proxy_resp.encode("utf-8") )
 
-            #
             # now need to start the loop for handing over request-reponse
             # between client and server via proxy
-            #
             inputs = [sock_web, self.sock_client]
             outputs = []
 
@@ -288,8 +290,9 @@ class ClientHandlerThread(threading.Thread):
         end_char = '\n'
         while not self.ccd.eventStop.is_set():
             ready = select.select(inputs, outputs, inputs, timeout) 
-
-            if (not ready[0] and not ready[1] and not ready[2]): break  # select timeout
+            if (not ready[0] and not ready[1] and not ready[2]): 
+                printMsg("select timeout occured", id=self.thread_id)
+                break  # select timeout
             for s in ready[0]:
                 sock_recv = None
                 sock_send = None
@@ -316,9 +319,7 @@ class ClientHandlerThread(threading.Thread):
                     end_char = ''
                     sock_send.sendall(reply)                 
                 else:
-                    #
                     # sock_recv is done with sending data and no data will ever receive on this socket
-                    #
                     str_msg += "^_^\t\t"
                     end_char = '\n'
                     sock_recv.shutdown(socket.SHUT_RD)
