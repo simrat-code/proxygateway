@@ -250,21 +250,17 @@ class ClientHandlerThread(threading.Thread):
             # which occurs during sock_client.recv() call
             # so setting blocking to True
             #
-            # using select() as solution to this issue
-            sock_web.setblocking(False)
-            if self.ccd.paddr:
-                # send 'CONNECT' packet to parent proxy
-                sock_web.sendall(str.encode(self.data))
-                # self.sock_client.setblocking(True)
-            # else:
+            # using select() as solution to above issue
             self.sock_client.setblocking(False)
 
-            # print("[{:03d}] client socket: {}".format(self.thread_id, self.sock_client))
-            # print("[{:03d}] web+++ socket: {}".format(self.thread_id, sock_web))
-            
-            # since connection with server is successful
-            # Proxy should send the 2xx reply to client.
-            self.sock_client.sendall(proxy_resp.encode("utf-8") )
+            sock_web.setblocking(False)
+            if self.ccd.paddr:
+                # send 'CONNECT' packet to parent-proxy
+                sock_web.sendall(str.encode(self.data))
+            else:
+                # since connection with target web-server is successful
+                # Proxy should send the 2xx reply to client.
+                self.sock_client.sendall(proxy_resp.encode("utf-8") )
 
             # now need to start the loop for handing over request-reponse
             # between client and server via proxy
@@ -336,4 +332,5 @@ class ClientHandlerThread(threading.Thread):
                 #
                 break
         return
-
+    
+      
