@@ -218,7 +218,7 @@ class ClientHandlerThread(threading.Thread):
             inputs = [sock_web, self.sock_client]
             outputs = []
             
-            self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=60)
+            self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=5)
 
         except socket.error as e:
             print("[{:03d}] exception occurs: {}".format(self.thread_id, e))
@@ -267,7 +267,7 @@ class ClientHandlerThread(threading.Thread):
             inputs = [sock_web, self.sock_client]
             outputs = []
 
-            self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=300)
+            self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=5)
            
         except socket.error as e:
             print("[{:03d}] exception occurs: {}".format(self.thread_id, e))
@@ -278,17 +278,24 @@ class ClientHandlerThread(threading.Thread):
             sock_web.close()
     
 
-    def _superWhile(self, inputs, outputs, sock_client, sock_web, timeout=8):
+    def _superWhile(self, inputs, outputs, sock_client, sock_web, timeout=3):
         #
         # NOTE: any exception raised here will/should be caught in calling function
         #
         str_msg = ""
         end_char = '\n'
+        select_counter = 0
         while not self.ccd.eventStop.is_set():
             ready = select.select(inputs, outputs, inputs, timeout) 
             if (not ready[0] and not ready[1] and not ready[2]): 
-                printMsg("select timeout occured", id=self.thread_id)
-                break  # select timeout
+                select_counter += timeout
+                if select_counter >= 300: 
+                    printMsg("select timeout occured", id=self.thread_id)
+                    break
+                continue
+                # break  # select timeout
+            # resetting counter
+            select_counter = 0
             for s in ready[0]:
                 sock_recv = None
                 sock_send = None
