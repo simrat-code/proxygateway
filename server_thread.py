@@ -45,7 +45,7 @@ class ServerProxyGW(threading.Thread):
             # timeout field has been set as on Windows during select() prog
             # do respond to Ctrl+C
             # It is after timeout it accept 'pending' user interrupt
-            readable, writable, exceptional = select.select (inputs, outputs, inputs, 5)
+            readable, _, _ = select.select (inputs, outputs, inputs, 5)
             for s in readable:
                 if s is sock_server:
                     id = id + 1
