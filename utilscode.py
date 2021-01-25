@@ -13,17 +13,25 @@ import threading
 #   - simple messages (simple)
 #   - data rate (dr)
 #
-def printMsg(str_data, id=0, end_char='\n', on_newline=True):
+# def printMsg(str_data, id=0, end_char='\n', on_newline=True):
+#     with threading.Lock():
+#         leading_newline = ''
+#         if on_newline == True:
+#             if getattr(printMsg, 'prev_end_char', '\n') != '\n':
+#                 leading_newline = '\n'
+#         else:
+#             leading_newline = '\r'
+#         printMsg.prev_end_char = end_char
+#         print("{}[{:03d}] {}".format(leading_newline, id, str_data), end=end_char, flush=True )
+
+def printMsg(str_data, id=0, nl=True):
     with threading.Lock():
-        leading_newline = ''
-        if on_newline == True:
-            printMsg.prev_end_char = getattr(printMsg, 'prev_end_char', '\n')
-            if printMsg.prev_end_char != '\n':
-                leading_newline = '\n'
+        start_char = ''
+        if nl == True:
+            start_char = '\n'
         else:
-            leading_newline = '\r'
-        printMsg.prev_end_char = end_char
-        print("{}[{:03d}] {}".format(leading_newline, id, str_data), end=end_char, flush=True )
+            start_char = '\r'
+        print("{}[{:03d}] {}".format(start_char, id, str_data), end='', flush=True )
 
 
 def printDataRate(str_data, id=0, end_char='', on_newline=True):
@@ -45,8 +53,7 @@ def fetchAddressPort(text):
 
 def banner():
     banner_text = " Proxy Gateway "
-
-    print(" "*4 + "=" * (8 + len(banner_text) + 8))
+    print(" "*4 + "="*(16 + len(banner_text)))
     print(" "*4 + "+"*8 + banner_text + "+"*8)
-    print(" "*4 + "=" * (8 + len(banner_text) + 8))
+    print(" "*4 + "="*(16 + len(banner_text)))
     print("")

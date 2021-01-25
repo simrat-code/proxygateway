@@ -221,7 +221,7 @@ class ClientHandlerThread(threading.Thread):
             self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=5)
 
         except socket.error as e:
-            print("[{:03d}] exception occurs: {}".format(self.thread_id, e))
+            printMsg(f"exception occurs: {e}", id=self.thread_id)
         finally:
             sock_web.close()
 
@@ -283,7 +283,7 @@ class ClientHandlerThread(threading.Thread):
         # NOTE: any exception raised here will/should be caught in calling function
         #
         str_msg = ""
-        end_char = '\n'
+        end_newline = True
         select_counter = 0
         while not self.ccd.eventStop.is_set():
             ready = select.select(inputs, outputs, inputs, timeout) 
@@ -319,17 +319,18 @@ class ClientHandlerThread(threading.Thread):
                 reply = sock_recv.recv(4096)
                 if (len(reply) > 0):
                     str_msg += "=> {} <=\t\t".format(self.dataRateKB(reply))
-                    end_char = ''
+                    end_newline = False
                     sock_send.sendall(reply)                 
                 else:
                     # sock_recv is done with sending data and no data will ever receive on this socket
                     str_msg += "^_^\t\t"
-                    end_char = '\n'
+                    end_newline = True
                     sock_recv.shutdown(socket.SHUT_RD)
                     inputs.remove(sock_recv)
                     inputs.remove(sock_send)
 
-                printDataRate(str_msg, id=self.thread_id, end_char=end_char, on_newline=False)
+                # printDataRate(str_msg, id=self.thread_id, end_char=end_char, on_newline=False)
+                printMsg(str_msg, id=self.thread_id, nl=end_newline)
             ## end of FOR
 
             if not inputs: 

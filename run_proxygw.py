@@ -56,17 +56,17 @@ def cleanup_server(pgw_thread, ccd):
     print("[=] waiting for server-thread to complete...")
     if pgw_thread.is_alive():
         ccd.eventStop.set()
-        # wait for 'server and client' thread-while to exit
+        # wait for 'server and client' thread while-loop to exit
         pgw_thread.join()
-        # event_stop.clear()
+        ccd.eventStop.clear()
         print("[=] server cleanup done")
     return "0"
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--local", help="local interface and port to listen on <0.0.0.0:8282>")
-    parser.add_argument("--parent", help="parent proxy interface and port <10.0.0.22:8080>")
+    parser.add_argument("--local", help="local interface and port to listen on, eg --local 0.0.0.0:8282")
+    parser.add_argument("--parent", help="parent proxy interface and port, eg --parent 10.0.0.22:8080")
     args = parser.parse_args()
 
     utilscode.banner()

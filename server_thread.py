@@ -31,7 +31,7 @@ class ServerProxyGW(threading.Thread):
             return
         sock_server.listen(5)
         sock_server.setblocking(False)
-        printMsg("server started on {}:{}".format(self._addr, self._port), on_newline=True)
+        printMsg("server started on {}:{}".format(self._addr, self._port), nl=True)
 
         # send 'up' status to main thread
         self._ccd.eventStart.set()
