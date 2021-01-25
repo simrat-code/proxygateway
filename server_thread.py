@@ -4,6 +4,7 @@ import socket
 import select
 import sys
 import time
+import logging
 
 from client_handler import ClientHandlerThread
 from client_handler import CommonClientData
@@ -13,7 +14,7 @@ from utilscode import printMsg
 class ServerProxyGW(threading.Thread):
 
     def __init__(self, ccd):
-        super().__init__()
+        super().__init__(name="Master-0")
         self._port = 8282
         self._addr = '0.0.0.0'
         self._ccd = ccd
@@ -24,14 +25,15 @@ class ServerProxyGW(threading.Thread):
             sock_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock_server.bind((self._addr, self._port))
         except OSError as e:
-            print("[-] Exception Caught: ", e)
-            print('[-] unable to start server')
+            logging.warning(f'Exception Caught: {e}')
+            logging.warning('unable to start server')
             # send signal to main thread
             self._ccd.eventStart.set()
             return
         sock_server.listen(5)
         sock_server.setblocking(False)
-        printMsg("server started on {}:{}".format(self._addr, self._port), nl=True)
+        # printMsg("server started on {}:{}".format(self._addr, self._port), nl=True)
+        logging.info("server started on {}:{}".format(self._addr, self._port))
 
         # send 'up' status to main thread
         self._ccd.eventStart.set()
@@ -49,7 +51,8 @@ class ServerProxyGW(threading.Thread):
             for s in readable:
                 if s is sock_server:
                     id = id + 1
-                    printMsg("accepting new request", id=id)
+                    # printMsg("accepting new request", id=id)
+                    logging.info("accepting new request")
                     sock_client, addr = s.accept()
                                         
                     # starting a new client thread
@@ -58,7 +61,7 @@ class ServerProxyGW(threading.Thread):
         else:
             if (sock_server):
                 sock_server.close()
-            print("[=] server socket closed")
+            logging.info("server socket closed")
     
     @property
     def port(self): return self._port

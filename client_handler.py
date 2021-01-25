@@ -7,6 +7,7 @@ import threading
 import socket
 import select
 import time
+import logging
 
 
 from utilscode import printMsg
@@ -73,7 +74,6 @@ class ClientHandlerThread(threading.Thread):
 
 
     def __init__(self, thread_id, sock_client, addr, ccd, data=""):
-        # super(ClientHandlerThread, self).__init__()
         super().__init__()
         self.thread_id = thread_id
         self.sock_client = sock_client
@@ -92,20 +92,19 @@ class ClientHandlerThread(threading.Thread):
             # for HTTPS-request this is 'CONNECT www.google.com:443 HTTP/1.1'
             data = self.sock_client.recv(8192)
             self.data = data.decode("utf-8")
-        print(f'recv data len {len(self.data)}')
+        logging.debug(f'recv data len {len(self.data)}')
 
         try:
             self.processRequest()           
         except socket.error as e:
-            print("[{:03d}] exception occurs 01: {}".format(self.thread_id, e))
+            logging.warning("exception occurs 01: {}".format(e))
         except ValueError as e:
-            print("[{:03d}] exception occurs 02: {}".format(self.thread_id, e))
+            logging.warning("exception occurs 02: {}".format(e))
         except IndexError as e:
-            print("[{:03d}] exception occurs 03: {}".format(self.thread_id, e))            
+            logging.warning("exception occurs 03: {}".format(e))            
         finally:
             if (self.sock_client): 
-                printMsg("closing client connection ----------------[ {:d} ]"
-                "".format(self.thread_id), id=self.thread_id)
+                logging.info(f"closing client connection ----------------[ {self.name} ]")
                 self.sock_client.close()
     
 
@@ -119,7 +118,7 @@ class ClientHandlerThread(threading.Thread):
     def fetchTarget(self, header_list):
         # check for HTTP Method in client request
         if (header_list[0] not in ["GET", "POST", "CONNECT"]):
-            print("[{:03d}] invalid HTTP method: {}".format(self.thread_id, header_list[0]) )
+            logging.warning("invalid HTTP method: {}".format(header_list[0]) )
             return
 
         # item at index 1 of first-line is the webserver's or website's server address
@@ -170,7 +169,7 @@ class ClientHandlerThread(threading.Thread):
         # for testing during early development - send back static resp to client
         # self.sock_client.send(self.static_resp.encode("utf-8"))
         
-        print(f'parent on {self.ccd.paddr}:{self.ccd.pport}')
+        logging.debug(f'parent on {self.ccd.paddr}:{self.ccd.pport}')
 
         first_line = self.data.split('\n')[0]
         header_list = first_line.split(' ')
@@ -184,13 +183,13 @@ class ClientHandlerThread(threading.Thread):
         # connecting to remote server (ie destination webserver)
         # pass self.data ie original request to it
         # and send back the response to client
-        printMsg("connecting: server => {} : {}".format(webserver, str(port)), id=self.thread_id )
+        logging.info("connecting: server => {}:{}".format(webserver, str(port)) )
         if (header_list[0] in ["GET", "POST"]):
             self.targetHTTPServer(webserver, port)
         elif (header_list[0] == "CONNECT"):
             self.targetSSLServer(webserver, port)
         else:
-            print("[{:03d}] ALERT!!! missing correct header !!!".format(self.thread_id))
+            logging.error("ALERT!!! incorrect header!!!")
             return
 
 
@@ -221,7 +220,7 @@ class ClientHandlerThread(threading.Thread):
             self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=5)
 
         except socket.error as e:
-            printMsg(f"exception occurs: {e}", id=self.thread_id)
+            logging.warning(f"exception in targetHTTP: {e}")
         finally:
             sock_web.close()
 
@@ -270,11 +269,8 @@ class ClientHandlerThread(threading.Thread):
             self._superWhile(inputs, outputs, self.sock_client, sock_web, timeout=5)
            
         except socket.error as e:
-            print("[{:03d}] exception occurs: {}".format(self.thread_id, e))
-        # except:
-        #     print("[{:03d}] exception occurs: unknown exception".format(self.thread_id))
+            logging.warning("exception in targetSSL: {}".format(e))
         finally:
-            # print("[{:03d}] closing webserver socket".format(self.thread_id), flush=True)
             sock_web.close()
     
 
@@ -290,7 +286,7 @@ class ClientHandlerThread(threading.Thread):
             if (not ready[0] and not ready[1] and not ready[2]): 
                 select_counter += timeout
                 if select_counter >= 300: 
-                    printMsg("select timeout occured", id=self.thread_id)
+                    logging.warning("select timeout occured")
                     break
                 continue
                 # break  # select timeout
@@ -311,7 +307,7 @@ class ClientHandlerThread(threading.Thread):
                     sock_send = sock_client
 
                 else:
-                    print("\n[{:03d}] ALERT!!! xxxxxxxx data from none side xxxxxxxx {}".format(self.thread_id, ready[0]), flush=True)
+                    logging.warning("ALERT!!! no data, ready[0] =>{}<=".format(ready[0]))
                     time.sleep(1)
                     break
 
@@ -330,7 +326,9 @@ class ClientHandlerThread(threading.Thread):
                     inputs.remove(sock_send)
 
                 # printDataRate(str_msg, id=self.thread_id, end_char=end_char, on_newline=False)
-                printMsg(str_msg, id=self.thread_id, nl=end_newline)
+                # printMsg(str_msg, id=self.thread_id, nl=end_newline)
+                if end_newline:
+                    logging.info(str_msg)
             ## end of FOR
 
             if not inputs: 
@@ -340,5 +338,4 @@ class ClientHandlerThread(threading.Thread):
                 #
                 break
         return
-    
-      
+# end      

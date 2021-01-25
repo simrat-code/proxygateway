@@ -4,7 +4,6 @@
 #
 
 import sys
-
 try:
     if sys.version_info.major != 3: raise NameError
 
@@ -12,6 +11,7 @@ try:
     import socket
     import threading
     import argparse
+    import logging
 
     import server_thread
     import utilscode
@@ -48,19 +48,19 @@ def startup_server(pgw_thread, ccd):
         ccd.eventStart.wait()
         ccd.eventStart.clear()
     else:
-        print("server already running")
-    return "1"
+        logging.warning('server already running')
+    return
 
 
 def cleanup_server(pgw_thread, ccd):
-    print("[=] waiting for server-thread to complete...")
+    logging.warning('waiting for server-thread to complete...')
     if pgw_thread.is_alive():
         ccd.eventStop.set()
         # wait for 'server and client' thread while-loop to exit
         pgw_thread.join()
         ccd.eventStop.clear()
-        print("[=] server cleanup done")
-    return "0"
+        logging.info('server cleanup done')
+    return
 
 
 if __name__ == "__main__":
@@ -69,8 +69,13 @@ if __name__ == "__main__":
     parser.add_argument("--parent", help="parent proxy interface and port, eg --parent 10.0.0.22:8080")
     args = parser.parse_args()
 
+    logging.basicConfig(
+        level = logging.INFO,
+        format = '[%(levelname)s] (%(threadName)-10s) %(message)s'
+    )
     utilscode.banner()
     ccd = CommonClientData()
+
     # An event object manages an internal flag that can be 
     # set()     : set flag to true
     # clear()   : reset the flag to false
@@ -87,13 +92,13 @@ if __name__ == "__main__":
                 
         startup_server(pgw_thread, ccd)
         while pgw_thread.is_alive(): time.sleep(5)
-        print("[x] server thread exited unexpectedly")
+        logging.error('server exited unexpectedly')
 
     except KeyboardInterrupt as e:
-        print("\n[-] user interrupt : {}".format(e))
+        logging.info('user interrupt: {e}')
         sys.exit(1)
     except ValueError as e:
-        print("[-] Exception Caught: invalid argument provided")
+        logging.error('Exception: invalid argument provided')
     finally:
         cleanup_server(pgw_thread, ccd)
     

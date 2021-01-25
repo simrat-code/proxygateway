@@ -13,16 +13,6 @@ import threading
 #   - simple messages (simple)
 #   - data rate (dr)
 #
-# def printMsg(str_data, id=0, end_char='\n', on_newline=True):
-#     with threading.Lock():
-#         leading_newline = ''
-#         if on_newline == True:
-#             if getattr(printMsg, 'prev_end_char', '\n') != '\n':
-#                 leading_newline = '\n'
-#         else:
-#             leading_newline = '\r'
-#         printMsg.prev_end_char = end_char
-#         print("{}[{:03d}] {}".format(leading_newline, id, str_data), end=end_char, flush=True )
 
 def printMsg(str_data, id=0, nl=True):
     with threading.Lock():
