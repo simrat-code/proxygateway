@@ -3,25 +3,57 @@
 # Date      : May-2020
 #
 
-import threading
+import logging
 
-#
-# if prev, end_char is not newline and current line on_newline=True
-# need a variable that should remember prev-value
-# 
-# for printing two types;
-#   - simple messages (simple)
-#   - data rate (dr)
-#
 
-def printMsg(str_data, id=0, nl=True):
-    with threading.Lock():
-        start_char = ''
-        if nl == True:
-            start_char = '\n'
-        else:
-            start_char = '\r'
-        print("{}[{:03d}] {}".format(start_char, id, str_data), end='', flush=True )
+class CommonThreadData():
+    def __init__(self):
+        self._event_start = None
+        self._event_stop = None
+        self._paddr = ''
+        self._pport = -1
+
+    @property
+    def eventStart(self): return self._event_start
+    @eventStart.setter
+    def eventStart(self, value): self._event_start = value
+
+    @property
+    def eventStop(self): return self._event_stop
+    @eventStop.setter
+    def eventStop(self, value): self._event_stop = value
+
+    @property
+    def paddr(self): return self._paddr
+    @paddr.setter
+    def paddr(self, value): self._paddr = value
+
+    @property
+    def pport(self): return self._pport
+    @pport.setter
+    def pport(self, value): self._pport = int(value)
+
+
+def startServer(pgw_thread, ctd):
+    ctd.eventStop.clear()
+    if pgw_thread.is_alive():
+        logging.warning('server already running')
+        return
+    pgw_thread.start()
+    # wait for server to start-up
+    ctd.eventStart.wait()
+    ctd.eventStart.clear()    
+
+
+def cleanServer(pgw_thread, ctd):
+    logging.warning('waiting for server-thread to complete...')
+    if not pgw_thread.is_alive():
+        return
+    ctd.eventStop.set()
+    # wait for 'server and client' thread while-loop to exit
+    pgw_thread.join()
+    ctd.eventStop.clear()
+    logging.info('server cleanup done')
 
 
 def printDataRate(str_data, id=0, end_char='', on_newline=True):
@@ -42,8 +74,8 @@ def fetchAddressPort(text):
 
 
 def banner():
-    banner_text = " Proxy Gateway "
-    print(" "*4 + "="*(16 + len(banner_text)))
-    print(" "*4 + "+"*8 + banner_text + "+"*8)
-    print(" "*4 + "="*(16 + len(banner_text)))
+    text = " Proxy Gateway "
+    print(" "*4 + "="*(16 + len(text)))
+    print(" "*4 + "+"*8 + text + "+"*8)
+    print(" "*4 + "="*(16 + len(text)))
     print("")

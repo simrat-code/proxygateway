@@ -10,9 +10,6 @@ import time
 import logging
 
 
-from utilscode import printMsg
-from utilscode import printDataRate
-
 def nextValueOf(text, src_list):
     print(src_list)
     x = len(src_list)
@@ -32,36 +29,9 @@ def portForService(protocol):
         return 80
     elif ("https" == protocol):
         return 443
-
-
-class CommonClientData():
-    def __init__(self):
-        self._event_start = None
-        self._event_stop = None
-        self._paddr = ''
-        self._pport = -1
-
-    @property
-    def eventStart(self): return self._event_start
-    @eventStart.setter
-    def eventStart(self, value): self._event_start = value
-
-    @property
-    def eventStop(self): return self._event_stop
-    @eventStop.setter
-    def eventStop(self, value): self._event_stop = value
-
-    @property
-    def paddr(self): return self._paddr
-    @paddr.setter
-    def paddr(self, value): self._paddr = value
-
-    @property
-    def pport(self): return self._pport
-    @pport.setter
-    def pport(self, value): self._pport = int(value)
-
-    
+    else:
+        return 80
+  
 
 class ClientHandlerThread(threading.Thread):
     static_resp = ("HTTP/1.0 200 OK \r\n"
@@ -73,13 +43,13 @@ class ClientHandlerThread(threading.Thread):
             "\r\n")
 
 
-    def __init__(self, thread_id, sock_client, addr, ccd, data=""):
+    def __init__(self, thread_id, sock_client, addr, ctd, data=""):
         super().__init__()
         self.thread_id = thread_id
         self.sock_client = sock_client
         self.addr = addr
         self.data = data
-        self.ccd = ccd
+        self.ctd = ctd
 
 
     def run(self):              
@@ -169,14 +139,14 @@ class ClientHandlerThread(threading.Thread):
         # for testing during early development - send back static resp to client
         # self.sock_client.send(self.static_resp.encode("utf-8"))
         
-        logging.debug(f'parent on {self.ccd.paddr}:{self.ccd.pport}')
+        logging.debug(f'parent on {self.ctd.paddr}:{self.ctd.pport}')
 
         first_line = self.data.split('\n')[0]
         header_list = first_line.split(' ')
-        if self.ccd.paddr:
+        if self.ctd.paddr:
             # parent proxy is provided on command-line option
-            webserver = self.ccd.paddr
-            port = self.ccd.pport
+            webserver = self.ctd.paddr
+            port = self.ctd.pport
         else:
             webserver, port = self.fetchTarget(header_list)
         
@@ -253,7 +223,7 @@ class ClientHandlerThread(threading.Thread):
             self.sock_client.setblocking(False)
 
             sock_web.setblocking(False)
-            if self.ccd.paddr:
+            if self.ctd.paddr:
                 # send 'CONNECT' packet to parent-proxy
                 sock_web.sendall(str.encode(self.data))
             else:
@@ -281,7 +251,7 @@ class ClientHandlerThread(threading.Thread):
         str_msg = ""
         end_newline = True
         select_counter = 0
-        while not self.ccd.eventStop.is_set():
+        while not self.ctd.eventStop.is_set():
             ready = select.select(inputs, outputs, inputs, timeout) 
             if (not ready[0] and not ready[1] and not ready[2]): 
                 select_counter += timeout

@@ -7,14 +7,12 @@ import time
 import logging
 
 from client_handler import ClientHandlerThread
-from client_handler import CommonClientData
-from utilscode import printMsg
 
 
 class ServerProxyGW(threading.Thread):
 
     def __init__(self, ccd):
-        super().__init__(name="Master-0")
+        super().__init__(name="Server-0")
         self._port = 8282
         self._addr = '0.0.0.0'
         self._ccd = ccd
