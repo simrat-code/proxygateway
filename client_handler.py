@@ -88,8 +88,8 @@ class ClientHandlerThread(threading.Thread):
     def fetchTarget(self, header_list):
         # check for HTTP Method in client request
         if (header_list[0] not in ["GET", "POST", "CONNECT"]):
-            logging.warning("invalid HTTP method: {}".format(header_list[0]) )
-            return
+            logging.warning("invalid HTTP method: ->{}<-".format(header_list[0]) )
+            raise ValueError("invalid HTTP method")
 
         # item at index 1 of first-line is the webserver's or website's server address
         # CONNECT https://null-byte.wonderhowto.com:443/test.html HTTP/1.1
