@@ -41,6 +41,8 @@ def startServer(pgw_thread, ctd):
         return
     pgw_thread.start()
     # wait for server to start-up
+    # inside ServerProxyGW::run(), eventStart will be 'set' once
+    # either server initializing is successfull or failed.
     ctd.eventStart.wait()
     ctd.eventStart.clear()    
 
@@ -52,7 +54,7 @@ def cleanServer(pgw_thread, ctd):
     ctd.eventStop.set()
     # wait for 'server and client' thread while-loop to exit
     pgw_thread.join()
-    ctd.eventStop.clear()
+    # ctd.eventStop.clear()     # need to comment it, as all other client thread also uses eventStop 
     logging.info('server cleanup done')
 
 

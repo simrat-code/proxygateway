@@ -57,6 +57,7 @@ class ServerProxyGW(threading.Thread):
                     # and 'event_stop' to indicate application exit.
                     ClientHandlerThread(id, sock_client, addr, self._ccd).start()
         else:
+            # condition in while-loop is not satisfied
             if (sock_server):
                 sock_server.close()
             logging.info("server socket closed")
