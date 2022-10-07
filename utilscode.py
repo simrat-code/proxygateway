@@ -4,6 +4,7 @@
 #
 
 import logging
+import os 
 
 
 class CommonThreadData():
@@ -12,6 +13,7 @@ class CommonThreadData():
         self._event_stop = None
         self._paddr = ''
         self._pport = -1
+        self._ignore_list = list()
 
     @property
     def eventStart(self): return self._event_start
@@ -32,6 +34,11 @@ class CommonThreadData():
     def pport(self): return self._pport
     @pport.setter
     def pport(self, value): self._pport = int(value)
+
+    @property
+    def ignoreList(self): return self._ignore_list
+    @ignoreList.setter
+    def ignoreList(self, value): self._ignore_list = list(value)
 
 
 def startServer(pgw_thread, ctd):
@@ -81,3 +88,14 @@ def banner():
     print(" "*4 + "+"*8 + text + "+"*8)
     print(" "*4 + "="*(16 + len(text)))
     print("")
+
+
+def ignoreList(textfile):
+    if not os.path.exists(textfile): raise ValueError(f"file {textfile} does not exist")
+    ignore_list = []
+    with open(textfile) as fp:
+        for line in fp:
+            if line.strip()[0] == '#': continue
+            ignore_list.append(line.strip())
+
+    return ignore_list

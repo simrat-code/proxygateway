@@ -149,6 +149,11 @@ class ClientHandlerThread(threading.Thread):
             port = self.ctd.pport
         else:
             webserver, port = self.fetchTarget(header_list)
+
+        # ignore host check
+        if webserver in self.ctd.ignoreList:
+            logging.info(f"ignoring: {webserver} ----") 
+            return
         
         # connecting to remote server (ie destination webserver)
         # pass self.data ie original request to it

@@ -42,6 +42,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--local", help="local interface and port to listen on, eg --local 0.0.0.0:8282")
     parser.add_argument("--parent", help="parent proxy interface and port, eg --parent 10.0.0.22:8080")
+    parser.add_argument("--ignore-file", help="text file containing IPs and/or Host to be ignored/blocked")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -64,6 +65,8 @@ if __name__ == "__main__":
             pgw_thread.addr, pgw_thread.port = utilscode.fetchAddressPort(args.local)
         if args.parent:
             ctd.paddr, ctd.pport = utilscode.fetchAddressPort(args.parent)
+        if args.ignore_file:
+            ctd.ignoreList = utilscode.ignoreList(args.ignore_file)
                 
         utilscode.startServer(pgw_thread, ctd)
         while pgw_thread.is_alive(): time.sleep(5)
@@ -73,7 +76,7 @@ if __name__ == "__main__":
         logging.warning(f'user interrupt: {e}')
         sys.exit(1)
     except ValueError as e:
-        logging.error('Exception: invalid argument provided')
+        logging.error(f'Exception: invalid argument provided: {e}')
     finally:
         utilscode.cleanServer(pgw_thread, ctd)
     
